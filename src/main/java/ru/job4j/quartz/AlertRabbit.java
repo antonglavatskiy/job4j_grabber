@@ -6,6 +6,7 @@ import org.quartz.impl.StdSchedulerFactory;
 import java.io.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
@@ -14,13 +15,11 @@ import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
 
 public class AlertRabbit {
-    private static Connection connection;
-    private static Properties properties;
-
 
     public static void main(String[] args) {
-        try (Connection connection = initConnection()) {
-            createTable();
+        Properties config = createConfig();
+        try (Connection connection = initConnection(config)) {
+            createTable(connection);
             Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
             scheduler.start();
             JobDataMap dataMap = new JobDataMap();
@@ -29,7 +28,7 @@ public class AlertRabbit {
                     .usingJobData(dataMap)
                     .build();
             SimpleScheduleBuilder times = simpleSchedule()
-                    .withIntervalInSeconds(initInterval())
+                    .withIntervalInSeconds(initInterval(config))
                     .repeatForever();
             Trigger trigger = newTrigger()
                     .startNow()
@@ -43,23 +42,32 @@ public class AlertRabbit {
         }
     }
 
-    public static Connection initConnection() {
-        properties = new Properties();
+    public static Properties createConfig() {
+        Properties properties = new Properties();
         try (InputStream input = AlertRabbit.class
                 .getClassLoader()
                 .getResourceAsStream("rabbit.properties")) {
             properties.load(input);
-            Class.forName(properties.getProperty("driver-class-name"));
-            connection = DriverManager.getConnection(properties.getProperty("rabbit.url"),
-                    properties.getProperty("rabbit.username"), properties.getProperty("rabbit.password"));
-        } catch (Exception e) {
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return properties;
+    }
+
+    public static Connection initConnection(Properties config) {
+        Connection connection = null;
+        try {
+            Class.forName(config.getProperty("driver-class-name"));
+            connection = DriverManager.getConnection(config.getProperty("rabbit.url"),
+                    config.getProperty("rabbit.username"), config.getProperty("rabbit.password"));
+        } catch (SQLException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         return connection;
     }
 
-    public static int initInterval() {
-        String interval = properties.getProperty("rabbit.interval");
+    public static int initInterval(Properties config) {
+        String interval = config.getProperty("rabbit.interval");
         if (!interval.matches("[0-9]+")) {
             throw new IllegalArgumentException(
                     String.format("Incorrect value %s in file \"%s\"",
@@ -68,7 +76,7 @@ public class AlertRabbit {
         return Integer.parseInt(interval);
     }
 
-    public static void createTable() {
+    public static void createTable(Connection connection) {
         try (Statement statement = connection.createStatement();
              BufferedReader reader = new BufferedReader(new FileReader("./db/scripts/schema.sql"))) {
             StringBuilder sql = new StringBuilder();
