@@ -54,16 +54,10 @@ public class AlertRabbit {
         return properties;
     }
 
-    public static Connection initConnection(Properties config) {
-        Connection connection = null;
-        try {
-            Class.forName(config.getProperty("driver-class-name"));
-            connection = DriverManager.getConnection(config.getProperty("rabbit.url"),
-                    config.getProperty("rabbit.username"), config.getProperty("rabbit.password"));
-        } catch (SQLException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return connection;
+    public static Connection initConnection(Properties config) throws SQLException, ClassNotFoundException {
+        Class.forName(config.getProperty("driver-class-name"));
+        return DriverManager.getConnection(config.getProperty("rabbit.url"),
+                config.getProperty("rabbit.username"), config.getProperty("rabbit.password"));
     }
 
     public static int initInterval(Properties config) {
