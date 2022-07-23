@@ -10,12 +10,17 @@ public class Post {
     private String description;
     private LocalDateTime created = LocalDateTime.now();
 
-    public Post() {
-    }
-
-    public Post(String title, String link) {
+    public Post(int id, String title, String link, String description) {
+        this.id = id;
         this.title = title;
         this.link = link;
+        this.description = description;
+    }
+
+    public Post(String title, String link, String description) {
+        this.title = title;
+        this.link = link;
+        this.description = description;
     }
 
     public int getId() {
