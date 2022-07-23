@@ -13,12 +13,10 @@ public class HabrCareerParse {
     private static final String PAGE_LINK = String.format("%s/vacancies/java_developer?page=", SOURCE_LINK);
 
     private String retrieveDescription(String link) throws IOException {
-        StringBuilder rsl = new StringBuilder();
         Connection connection = Jsoup.connect(link);
         Document document = connection.get();
-        Elements description = document.select(".collapsible-description__content");
-        description.forEach(element -> rsl.append(element.text()));
-        return rsl.toString();
+        Element description = document.selectFirst(".style-ugc");
+        return description.text();
     }
 
     public static void main(String[] args) throws IOException {
