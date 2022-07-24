@@ -7,7 +7,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import ru.job4j.grabber.model.Post;
 import ru.job4j.grabber.utils.DateTimeParser;
-import ru.job4j.grabber.utils.HabrCareerDateTimeParser;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -15,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HabrCareerParse implements Parse {
+    private static final int COUNT = 5;
     private static final String SOURCE_LINK = "https://career.habr.com";
     private static final String PAGE_LINK = String.format("%s/vacancies/java_developer?page=", SOURCE_LINK);
     private final DateTimeParser dateTimeParser;
@@ -23,45 +23,41 @@ public class HabrCareerParse implements Parse {
         this.dateTimeParser = dateTimeParser;
     }
 
-    public static void main(String[] args) {
-        HabrCareerParse habr = new HabrCareerParse(new HabrCareerDateTimeParser());
-        System.out.println(habr.list(PAGE_LINK).size());
-    }
-
-    private String retrieveDescription(String link) {
-        String rsl = null;
+    private Elements connectPage(String link, String query) {
+        Elements rsl;
         try {
             Connection connection = Jsoup.connect(link);
             Document document = connection.get();
-            Element description = document.selectFirst(".style-ugc");
-            rsl = description.text();
+            rsl = document.select(query);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IllegalArgumentException(
+                    String.format("Failed to open page %s", link));
         }
         return rsl;
+    }
+
+    private String retrieveDescription(String link) {
+        Elements description = connectPage(link, ".style-ugc");
+        return description.text();
+    }
+
+    private Post createPost(Element element) {
+        Element titleElement = element.select(".vacancy-card__title").first();
+        Element linkedElement = element.select(".vacancy-card__title-link").first();
+        Element dateElement = element.select(".basic-date").first();
+        String vacancyName = titleElement.text();
+        String vacancyLink = String.format("%s%s", SOURCE_LINK, linkedElement.attr("href"));
+        String description = retrieveDescription(vacancyLink);
+        LocalDateTime dateTime = dateTimeParser.parse(dateElement.attr("datetime"));
+        return new Post(vacancyName, vacancyLink, description, dateTime);
     }
 
     @Override
     public List<Post> list(String link) {
         List<Post> rsl = new ArrayList<>();
-        for (int i = 1; i <= 5; i++) {
-            try {
-                Connection connection = Jsoup.connect(link);
-                Document document = connection.get();
-                Elements rows = document.select(".vacancy-card__inner");
-                rows.forEach(row -> {
-                    Element titleElement = row.select(".vacancy-card__title").first();
-                    Element linkedElement = titleElement.select(".vacancy-card__title-link").first();
-                    Element dateElement = row.selectFirst(".basic-date");
-                    String vacancyName = titleElement.text();
-                    String vacancyLink = String.format("%s%s", SOURCE_LINK, linkedElement.attr("href"));
-                    String description = retrieveDescription(vacancyLink);
-                    LocalDateTime dateTime = dateTimeParser.parse(dateElement.attr("datetime"));
-                    rsl.add(new Post(vacancyName, vacancyLink, description, dateTime));
-                });
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        for (int i = 1; i <= COUNT; i++) {
+            Elements rows = connectPage(link, ".vacancy-card__inner");
+            rows.forEach(row -> rsl.add(createPost(row)));
         }
         return rsl;
     }
