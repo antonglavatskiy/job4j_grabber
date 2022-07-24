@@ -34,14 +34,17 @@ public class PsqlStore implements Store, AutoCloseable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        PsqlStore store = new PsqlStore(config);
-        HabrCareerParse parse = new HabrCareerParse(new HabrCareerDateTimeParser());
-        List<Post> postList = parse.list("https://career.habr.com/vacancies/java_developer?page=");
-        store.save(postList.get(0));
-        store.save(postList.get(1));
-        store.save(postList.get(2));
-        System.out.println(store.getAll().size());
-        System.out.println(store.findById(2).equals(store.getAll().get(1)));
+        try (PsqlStore store = new PsqlStore(config)) {
+            HabrCareerParse parse = new HabrCareerParse(new HabrCareerDateTimeParser());
+            List<Post> postList = parse.list("https://career.habr.com/vacancies/java_developer?page=");
+            store.save(postList.get(0));
+            store.save(postList.get(1));
+            store.save(postList.get(2));
+            System.out.println(store.getAll().size() == 3);
+            System.out.println(store.findById(2).equals(store.getAll().get(1)));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -78,8 +81,7 @@ public class PsqlStore implements Store, AutoCloseable {
                 "select * from post;")) {
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    Post post = createPost(resultSet);
-                    rsl.add(post);
+                    rsl.add(createPost(resultSet));
                 }
             }
         } catch (SQLException e) {
