@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HabrCareerParse implements Parse {
-    private static final int COUNT = 5;
+    private static final int COUNT = 1;
     private static final String SOURCE_LINK = "https://career.habr.com";
     private static final String PAGE_LINK = String.format("%s/vacancies/java_developer?page=", SOURCE_LINK);
     private final DateTimeParser dateTimeParser;
@@ -56,7 +56,7 @@ public class HabrCareerParse implements Parse {
     public List<Post> list(String link) {
         List<Post> rsl = new ArrayList<>();
         for (int i = 1; i <= COUNT; i++) {
-            Elements rows = connectPage(link, ".vacancy-card__inner");
+            Elements rows = connectPage(link + i, ".vacancy-card__inner");
             rows.forEach(row -> rsl.add(createPost(row)));
         }
         return rsl;
