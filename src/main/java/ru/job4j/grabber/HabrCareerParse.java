@@ -53,10 +53,10 @@ public class HabrCareerParse implements Parse {
     }
 
     @Override
-    public List<Post> list(String link) {
+    public List<Post> list() {
         List<Post> rsl = new ArrayList<>();
         for (int i = 1; i <= COUNT; i++) {
-            Elements rows = connectPage(link + i, ".vacancy-card__inner");
+            Elements rows = connectPage(PAGE_LINK + i, ".vacancy-card__inner");
             rows.forEach(row -> rsl.add(createPost(row)));
         }
         return rsl;

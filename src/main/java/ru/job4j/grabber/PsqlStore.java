@@ -1,10 +1,7 @@
 package ru.job4j.grabber;
 
 import ru.job4j.grabber.model.Post;
-import ru.job4j.grabber.utils.HabrCareerDateTimeParser;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,28 +22,6 @@ public class PsqlStore implements Store, AutoCloseable {
         }
     }
 
-    public static void main(String[] args) {
-        Properties config = new Properties();
-        try (InputStream inputStream = PsqlStore.class.
-                getClassLoader()
-                .getResourceAsStream("habr.properties")) {
-            config.load(inputStream);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try (PsqlStore store = new PsqlStore(config)) {
-            HabrCareerParse parse = new HabrCareerParse(new HabrCareerDateTimeParser());
-            List<Post> postList = parse.list("https://career.habr.com/vacancies/java_developer?page=");
-            store.save(postList.get(0));
-            store.save(postList.get(1));
-            store.save(postList.get(2));
-            System.out.println(store.getAll().size() == 3);
-            System.out.println(store.findById(2).equals(store.getAll().get(1)));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     @Override
     public void close() throws Exception {
         if (connection != null) {
@@ -58,7 +33,8 @@ public class PsqlStore implements Store, AutoCloseable {
     public void save(Post post) {
         try (PreparedStatement statement = connection.prepareStatement(
                 "insert into post (name, description, link, created)"
-                        + " values (?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS)) {
+                        + " values (?, ?, ?, ?) on conflict (link) do nothing;",
+                Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, post.getTitle());
             statement.setString(2, post.getDescription());
             statement.setString(3, post.getLink());
