@@ -15,7 +15,7 @@ public class Emulator {
             """;
 
     public static final String CHOICE_CACHE = """
-                1. Загрузить содержимое файла в кеш
+                1. Загрузить содержимое файла в кэш
                 2. Получить содержимое файла из кэша
                 3. Выход
             """;
@@ -40,7 +40,7 @@ public class Emulator {
         }
     }
 
-    private static void start(Scanner scanner) {
+    public static void start(Scanner scanner) {
         boolean run = true;
         System.out.println(CHOICE_DIR);
         while (run) {
@@ -48,6 +48,7 @@ public class Emulator {
             if (1 == userChoice) {
                 System.out.println(ENTER_DIR_NAME);
                 DirFileCache cache = new DirFileCache(scanner.nextLine());
+                System.out.println();
                 startCache(scanner, cache);
             } else {
                 run = false;
