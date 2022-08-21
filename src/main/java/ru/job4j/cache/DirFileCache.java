@@ -14,7 +14,7 @@ public class DirFileCache extends AbstractCache<String, String> {
 
     @Override
     protected String load(String key) {
-        StringJoiner rsl = new StringJoiner("\n");
+        StringJoiner rsl = new StringJoiner(System.lineSeparator());
         try {
             Files.readAllLines(Path.of(cachingDir, key))
                     .forEach(rsl::add);
